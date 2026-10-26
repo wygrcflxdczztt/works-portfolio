@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>初版</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<style>
+/* ========== 设计令牌 ========== */
+:root{
+  --paper:#f6f0e2;
+  --paper-2:#efe5cd;
+  --paper-3:#f9f4e7;
+  --ink:#2a241c;
+  --ink-2:#5d5040;
+  --ink-3:#8a7a64;
+  --red:#b02f1f;
+  --red-soft:#f3e0d7;
+  --olive:#73724a;
+  --line:#cfc3a6;
+  --font-serif:'Noto Serif SC','Songti SC','STSong',serif;
+  --font-sans:'Noto Sans SC','PingFang SC','Microsoft YaHei',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--font-sans);color:var(--ink);background:#e8dfc8;
+  -webkit-font-smoothing:antialiased;line-height:1.7;overflow:hidden;
+}
+a{color:inherit}
+img{max-width:100%;height:auto;display:block}
+::selection{background:var(--red);color:#fff}
+
+/* ========== 书 ========== */
+.book{position:fixed;inset:0;overflow:hidden;background:var(--paper)}
+.track{display:flex;height:100%;width:100%;transition:transform .55s cubic-bezier(.5,.12,.2,1);will-change:transform}
+.page{
+  flex:0 0 100%;width:100%;height:100%;
+  overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  background:
+    linear-gradient(to right, rgba(41,35,27,.10) 0, rgba(41,35,27,.03) 16px, transparent 42px),
+    var(--paper);
+  padding:70px 22px 92px;
+  position:relative;
+}
+
+/* 页眉（章节眉标） */
+.ch-kicker{font-family:var(--font-serif);font-style:italic;color:var(--ink-3);font-size:14px;letter-spacing:.08em;margin-bottom:22px}
+.ch-head{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--line);padding-bottom:14px;margin-bottom:22px}
+.ch-num{font-family:var(--font-serif);font-weight:900;font-size:13px;color:var(--red);letter-spacing:.18em;white-space:nowrap}
+.ch-title{font-family:var(--font-serif);font-weight:900;font-size:26px;letter-spacing:.05em}
+
+/* 作品块标题 */
+.sec-t{font-family:var(--font-serif);font-weight:700;font-size:17px;margin:26px 0 12px;letter-spacing:.03em;display:flex;align-items:center;gap:8px}
+.sec-t .tag{font-size:11px;color:var(--red);border:1px solid var(--red);border-radius:999px;padding:2px 9px;font-family:var(--font-serif);letter-spacing:.08em}
+
+/* ========== 翻页卡（草稿在前，成稿在后） ========== */
+.flip{position:relative;perspective:1300px;margin-bottom:18px}
+.face{
+  position:absolute;left:0;right:0;top:0;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  border:1px solid var(--line);border-radius:4px;
+  padding:20px 18px;transition:transform .6s cubic-bezier(.4,.2,.2,1);
+}
+.face.draft{transform:rotateY(0);background:var(--paper-2)}
+.face.final{transform:rotateY(180deg);background:var(--paper-3)}
+.flip.flipped .face.draft{transform:rotateY(-180deg)}
+.flip.flipped .face.final{transform:rotateY(0)}
+.ftag{display:inline-block;font-size:11px;letter-spacing:.12em;padding:3px 10px;border:1px solid var(--ink-2);border-radius:999px;margin-bottom:12px;font-family:var(--font-serif);font-weight:700}
+.ftag.draft{color:var(--red);border-color:var(--red)}
+.f-title{font-family:var(--font-serif);font-weight:700;font-size:16px;margin-bottom:4px}
+.f-sub{font-size:12.5px;color:var(--ink-3);margin-bottom:12px}
+.f-body{font-size:14px;color:var(--ink-2)}
+.f-body p{margin-bottom:9px}
+.art-img{margin:4px 0 12px;border:1px solid var(--line);border-radius:3px;background:#fff}
+.wlink{display:inline-block;font-size:13px;font-weight:600;color:var(--red);text-decoration:none;border-bottom:1px dashed var(--red);padding-bottom:1px;margin-top:2px}
+.note{border-left:3px solid var(--red);background:var(--red-soft);padding:9px 12px;font-size:13px;color:var(--ink);border-radius:0 4px 4px 0;margin-top:12px}
+.note b{font-family:var(--font-serif);color:var(--red);display:block;font-size:11.5px;letter-spacing:.08em;margin-bottom:3px}
+.strike{color:var(--red);text-decoration:line-through;text-decoration-thickness:2px;text-decoration-color:var(--red)}
+.pzh{color:var(--red)}
+.flip-btn{
+  margin-top:14px;display:inline-block;cursor:pointer;
+  font-family:var(--font-serif);font-weight:700;font-size:12.5px;letter-spacing:.1em;
+  border:1px solid var(--ink);background:transparent;color:var(--ink);padding:8px 16px;border-radius:999px;
+  transition:all .2s;
+}
+.flip-btn:hover{background:var(--ink);color:var(--paper)}
+.flip-btn.red{border-color:var(--red);color:var(--red)}
+.flip-btn.red:hover{background:var(--red);color:#fff}
+.flip-tip{font-size:12px;color:var(--ink-3);margin-top:8px;letter-spacing:.05em}
+
+/* ========== 能力地图（竖向小路） ========== */
+.map-box{border:1px solid var(--line);border-radius:4px;background:var(--paper-3);padding:8px 12px}
+.map-node{display:flex;align-items:center;gap:14px;padding:13px 12px;font-family:var(--font-serif);font-weight:700;font-size:16px;cursor:pointer;border-left:2px solid var(--ink-3);transition:color .25s,border-color .25s;position:relative}
+.map-node:not(:last-child)::after{content:"";position:absolute;left:calc(12px + 6px);top:100%;width:0;height:12px;border-left:1.5px dashed var(--olive)}
+.map-node .md{width:13px;height:13px;border-radius:50%;border:2px solid var(--ink);flex:none;background:transparent;transition:background .25s,border-color .25s}
+.map-node.on{color:var(--red);border-left-color:var(--red)}
+.map-node.on .md{background:var(--red);border-color:var(--red)}
+.map-cap{font-size:12.5px;color:var(--ink-3);text-align:center;padding:8px 0 4px}
+
+/* ========== 此刻的我 ========== */
+.self-card{border:1px solid var(--line);border-radius:4px;background:var(--paper-3);padding:18px 20px;margin-bottom:16px}
+.self-card h3{font-family:var(--font-serif);font-weight:700;font-size:16px;margin-bottom:8px}
+.contact-row{display:flex;gap:10px;align-items:center;font-size:14px;color:var(--ink-2);padding:9px 0;border-bottom:1px dashed var(--line)}
+.contact-row .lbl{font-family:var(--font-serif);font-weight:700;color:var(--red);font-size:12.5px;letter-spacing:.06em;min-width:42px;flex:none}
+.contact-row a{color:var(--ink);text-decoration:none;border-bottom:1px dashed var(--ink-3);word-break:break-all}
+
+/* ========== 未完成 / 留言 ========== */
+.blank{border:1px solid var(--line);border-radius:4px;background:var(--paper-3);padding:44px 20px;text-align:center}
+.blank .dot{font-family:var(--font-serif);color:var(--ink-3);letter-spacing:.4em;margin-bottom:20px}
+.blank .line1{font-family:var(--font-serif);font-weight:700;font-size:20px;color:var(--ink);letter-spacing:.04em}
+.future-tags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+.future-tags span{border:1px dashed var(--ink-3);color:var(--ink-3);font-size:12.5px;padding:7px 14px;border-radius:999px;font-family:var(--font-serif)}
+.blank .renew{margin-top:22px;font-size:12.5px;color:var(--ink-3)}
+.messages{margin-top:30px}
+.messages h3{font-family:var(--font-serif);font-weight:700;font-size:16px;margin-bottom:4px;letter-spacing:.04em}
+.messages .sub{font-size:12.5px;color:var(--ink-3);margin-bottom:14px}
+.msg-form{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+.msg-form textarea{flex:1;min-width:180px;resize:vertical;border:1px solid var(--line);border-radius:4px;background:var(--paper-3);color:var(--ink);font-family:var(--font-sans);font-size:14px;padding:11px 13px;line-height:1.6}
+.msg-form textarea:focus{outline:1.5px solid var(--red)}
+.msg-form button{border:none;background:var(--red);color:#fff;cursor:pointer;font-family:var(--font-serif);font-weight:700;font-size:14px;letter-spacing:.1em;padding:12px 20px;border-radius:4px}
+.msg-list{display:flex;flex-direction:column;gap:10px}
+.msg-item{border:1px solid var(--line);border-left:3px solid var(--red);background:var(--paper-3);border-radius:0 4px 4px 0;padding:10px 14px}
+.msg-item .t{font-size:11.5px;color:var(--ink-3);margin-bottom:3px;font-family:var(--font-serif)}
+.msg-item p{font-size:14px;color:var(--ink)}
+
+/* ========== 封面（书皮） ========== */
+.cover-page{
+  background:
+    radial-gradient(circle at 30% 20%, rgba(176,47,31,.20), transparent 42%),
+    radial-gradient(circle at 75% 85%, rgba(115,114,74,.18), transparent 40%),
+    var(--ink);
+  color:var(--paper);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+  padding:52px 30px;
+}
+.cover-page .ribbon{width:64px;height:2px;background:var(--red);margin:0 auto 30px}
+.cover-page .title{font-family:var(--font-serif);font-weight:900;font-size:clamp(56px,19vw,80px);letter-spacing:.08em;line-height:1;color:var(--paper)}
+.cover-page .title .red{color:#c84537}
+.cover-page .sub{font-family:var(--font-serif);font-weight:600;font-size:clamp(15px,4.4vw,19px);color:var(--paper);margin-top:18px;letter-spacing:.1em;opacity:.92}
+.cover-page .concept{margin-top:26px;font-size:13px;color:#d8cdb4;letter-spacing:.05em;max-width:320px;line-height:1.9}
+.cover-page .rule{width:70px;height:1px;background:rgba(246,240,226,.35);margin:30px auto 0}
+.cover-page .how{margin-top:26px;font-size:12.5px;color:#b8ac90;letter-spacing:.1em}
+.cover-page .open-btn{
+  margin-top:38px;display:inline-block;cursor:pointer;
+  font-family:var(--font-serif);font-weight:700;font-size:16px;letter-spacing:.16em;
+  color:var(--paper);background:var(--red);border:none;padding:15px 44px;border-radius:999px;
+  transition:opacity .2s,transform .2s;
+}
+.cover-page .open-btn:hover{opacity:.9;transform:translateY(-2px)}
+.cover-page .ver{position:absolute;top:32px;right:28px;font-family:var(--font-serif);font-size:12px;color:#b8ac90;letter-spacing:.2em}
+
+/* ========== 底部导航（书页翻页） ========== */
+.nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:rgba(246,240,226,.95);backdrop-filter:blur(6px);
+  border-top:1px solid var(--line);
+  padding:10px 18px calc(10px + env(safe-area-inset-bottom));
+}
+.nav-in{max-width:560px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.nav-btn{
+  font-family:var(--font-serif);font-weight:700;font-size:13px;letter-spacing:.08em;
+  color:var(--ink);background:transparent;border:1px solid var(--ink);border-radius:999px;
+  padding:9px 16px;cursor:pointer;transition:all .2s;min-width:88px;
+}
+.nav-btn:hover{background:var(--ink);color:var(--paper)}
+.nav-btn:disabled{opacity:.35;pointer-events:none;border-color:var(--ink-3);color:var(--ink-3)}
+.nav-ind{text-align:center;min-width:0}
+.nav-ind .where{font-family:var(--font-serif);font-weight:700;font-size:14px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nav-ind .pos{font-size:12px;color:var(--ink-3);margin-top:2px;letter-spacing:.1em}
+.dots{display:flex;gap:5px;justify-content:center;margin-top:5px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--line);display:block}
+.dots i.on{background:var(--red)}
+
+/* 桌面宽屏时把非封面页内容限制为竖排书列 */
+@media(min-width:640px){
+  .page:not(.cover-page){padding-left:calc((100% - 560px)/2 + 22px);padding-right:calc((100% - 560px)/2 + 22px)}
+  .cover-page .concept{max-width:380px}
+}
+
+/* ========== 动效（尊重 reduced motion） ========== */
+@media (prefers-reduced-motion:reduce){
+  .track,.face,.cover-page .open-btn{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<div class="book">
+  <div class="track" id="track">
+
+    <!-- 封面 -->
+    <section class="page cover-page" data-i="0">
+      <div class="ver">初版 · v1.0</div>
+      <div class="ribbon"></div>
+      <div class="title">《<span class="red">初版</span>》</div>
+      <div class="sub">一本正在修订中的成长之书</div>
+      <div class="concept">个人成长，从“结果”变成“过程”。<br>这是一本带着修订痕迹、夹着旧稿、留着批注的书。</div>
+      <div class="rule"></div>
+      <div class="how">翻过旧稿 · 才见现在</div>
+      <button class="open-btn" id="openBtn">翻开这本书</button>
+    </section>
+
+    <!-- 第 1 页 · 第一章 -->
+    <section class="page" data-i="1">
+      <div class="ch-kicker">第一章 · 启蒙</div>
+      <div class="ch-head"><span class="ch-num">第一章</span><span class="ch-title">启蒙｜最初的表达冲动</span></div>
+
+      <div class="sec-t"><span class="tag">1.1</span>起念——第一个想记录的瞬间</div>
+      <div class="flip">
+        <div class="face draft">
+          <span class="ftag draft">草稿页</span>
+          <div class="f-title">第一张图 · 最初的记录</div>
+          <div class="f-sub">第一件作品的最初形态，保留原貌</div>
+          <img class="art-img" src="assets/ch1-draft.jpg" alt="阴影下静谧角落的橘猫">
+          <div class="note"><b>批注</b>当时为什么想记录这个？——看到阴影下静谧的角落，发自内心想留住这一刻的美好。</div>
+          <div class="note"><b>批注</b>这段原样留着，不修饰——它就是起点。</div>
+          <button class="flip-btn red">翻开成稿</button>
+        </div>
+        <div class="face final">
+          <span class="ftag">成稿页</span>
+          <div class="f-title">如今对这段启蒙的简短复盘</div>
+          <div class="f-body">
+            <p>「那次的“没忍住”，最后把我带向了现在的方向。」</p>
+          </div>
+          <button class="flip-btn">翻回草稿</button>
+        </div>
+      </div>
+      <div class="flip-tip">翻页对照 · 当年的我 → 现在的解读</div>
+    </section>
+
+    <!-- 第 2 页 · 第二章 -->
+    <section class="page" data-i="2">
+      <div class="ch-kicker">第二章 · 磨刀</div>
+      <div class="ch-head"><span class="ch-num">第二章</span><span class="ch-title">磨刀｜能力锻造</span></div>
+
+      <div class="sec-t"><span class="tag">2.1</span>公众号排版设计</div>
+      <div class="flip">
+        <div class="face draft">
+          <span class="ftag draft">草稿页</span>
+          <div class="f-title">公众号排版 · 当年第一版</div>
+          <div class="f-sub">不成熟的风格，不够精美统一的排版</div>
+          <img class="art-img" src="assets/w21-draft.png" alt="公众号排版的草稿截图">
+          <a class="wlink" href="https://mp.weixin.qq.com/s/eKh60InmLDollIoZl1SEtw" target="_blank" rel="noopener">打开草稿文章 →</a>
+          <div class="note"><b>批注</b>不成熟的风格；不够精美统一的排版。</div>
+          <button class="flip-btn red">翻开成稿</button>
+        </div>
+        <div class="face final">
+          <span class="ftag">成稿页</span>
+          <div class="f-title">公众号排版 · 最终交付</div>
+          <img class="art-img" src="assets/w21-final.png" alt="公众号排版的成稿截图">
+          <a class="wlink" href="https://mp.weixin.qq.com/s/OqLBF-JtpUQD75d9TUk43Q" target="_blank" rel="noopener">打开成稿文章 →</a>
+          <button class="flip-btn">翻回草稿</button>
+        </div>
+      </div>
+
+      <div class="sec-t"><span class="tag">2.2</span>写作与表达</div>
+      <div class="flip">
+        <div class="face draft">
+          <span class="ftag draft">草稿页</span>
+          <div class="f-title">初稿 · 保留原文</div>
+          <img class="art-img" src="assets/w22-draft.png" alt="写作初稿截图">
+          <div class="note"><b>导师评语</b>选题不够鲜明。</div>
+          <button class="flip-btn red">翻开成稿</button>
+        </div>
+        <div class="face final">
+          <span class="ftag">成稿页</span>
+          <div class="f-title">定稿 · 用事实和细节说话</div>
+          <img class="art-img" src="assets/w22-final.png" alt="写作成稿截图">
+          <button class="flip-btn">翻回草稿</button>
+        </div>
+      </div>
+
+      <div class="sec-t"><span class="tag">2.3</span>视频剪辑与制作</div>
+      <div class="flip">
+        <div class="face draft">
+          <span class="ftag draft">草稿页</span>
+          <div class="f-title">第一版粗糙剪辑 / 分镜</div>
+          <img class="art-img" src="assets/w23-draft-1.png" alt="视频第一版分镜截图">
+          <img class="art-img" src="assets/w23-draft-2.png" alt="视频第一版画面截图">
+          <a class="wlink" href="https://weixin.qq.com/sph/AfQVNP9cDP" target="_blank" rel="noopener">打开第一版视频 →</a>
+          <div class="note"><b>批注</b>第一次的作品画面粗糙、转场生硬。</div>
+          <button class="flip-btn red">翻开成稿</button>
+        </div>
+        <div class="face final">
+          <span class="ftag">成稿页</span>
+          <div class="f-title">成片二维码</div>
+          <img class="art-img" src="assets/w23-final-qr.png" alt="成片二维码">
+          <button class="flip-btn">翻回草稿</button>
+        </div>
+      </div>
+
+      <div class="sec-t"><span class="tag">2.4</span>H5 交互设计</div>
+      <div class="flip">
+        <div class="face draft">
+          <span class="ftag draft">草稿页</span>
+          <div class="f-title">第一版定位</div>
+          <div class="f-body">
+            <p><b class="pzh">《银发族的数字生活指南》</b></p>
+            <p>核心构思：用趣味动画演示智能手机基础操作（如扫码、视频通话），用户可模拟“帮长辈解决一个数字难题”，生成操作步骤卡片。</p>
+            <p>创新点：以场景化交互降低老年人数字学习难度，传递代际关怀。</p>
+          </div>
+          <div class="note"><b>批注</b>第一版定位太宽，后来发现，老年人真正需要的是切实切身的数字关怀。</div>
+          <div class="note"><b>批注</b>我们从十五五纲要中提取了一部分信息，最终敲定了“就医买药助手”的具体方向。</div>
+          <button class="flip-btn red">翻开成稿</button>
+        </div>
+        <div class="face final">
+          <span class="ftag">成稿页</span>
+          <div class="f-title">就医买药助手 · 银龄医伴</div>
+          <div class="f-sub">长按图片识别二维码，体验成稿互动</div>
+          <img class="art-img" src="assets/w24-final-qr.jpg" alt="银龄医伴 H5 成稿海报与二维码">
+          <button class="flip-btn">翻回草稿</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第 3 页 · 第三章 -->
+    <section class="page" data-i="3">
+      <div class="ch-kicker">第三章 · 碰撞</div>
+      <div class="ch-head"><span class="ch-num">第三章</span><span class="ch-title">碰撞｜失败与转折</span></div>
+
+      <div class="sec-t"><span class="tag">3.1</span>一次失败 · 一个被否的选题策划</div>
+      <div class="flip">
+        <div class="face draft">
+          <span class="ftag draft">草稿页 · 失败旧稿</span>
+          <div class="f-title">《用星露谷的方式打开中传校园生活》</div>
+          <div class="f-body">
+            <p>在年轻人熟悉的<span class="strike">游戏语境</span>中，解构大学生的日常、情绪与成长，打造“<span class="strike">沉浸式校园游戏体验</span>”</p>
+            <p>成片形式：校园生活＋游戏模拟</p>
+          </div>
+          <div class="note"><b>批注 · 当时</b>报上去被老师否了，说游戏选题并不能契合小红书平台的用户调性，获得很好的流量曝光。当时挺不服气，觉得游戏很符合大学生群体的兴趣点，为什么不行？</div>
+          <div class="note"><b>批注 · 后来</b>现在看确实——我“身边即世界”地认为游戏模拟会很吸引眼球，单纯追求形式新颖，却忽略了新媒体短视频的受众分析，导致了样片的主题空洞、吸引力不足。</div>
+          <button class="flip-btn red">翻开成稿</button>
+        </div>
+        <div class="face final">
+          <span class="ftag">成稿页</span>
+          <div class="f-title">《不社恐挑战》</div>
+          <div class="f-body">
+            <p>结构：抛弃了“重形式、轻内容”的错误创作思维，改成在校园中跟拍、采访随机的人。以创意为壳、以内容为核。</p>
+          </div>
+          <button class="flip-btn">翻回草稿</button>
+        </div>
+      </div>
+      <div class="flip-tip">失败旧稿完整保留 · 翻过它，才见转弯</div>
+    </section>
+
+    <!-- 第 4 页 · 第四章 -->
+    <section class="page" data-i="4">
+      <div class="ch-kicker">第四章 · 现在</div>
+      <div class="ch-head"><span class="ch-num">第四章</span><span class="ch-title">现在｜初版此刻的“我”</span></div>
+
+      <div class="sec-t"><span class="tag">4.1</span>能力地图</div>
+      <p style="font-size:14px;color:var(--ink-2);margin-bottom:14px">一条小路，把散落的能力连成现在的我。</p>
+      <div class="map-box">
+        <div class="map-node" data-k="采访"><span class="md"></span>采访</div>
+        <div class="map-node" data-k="写作"><span class="md"></span>写作</div>
+        <div class="map-node" data-k="剪辑"><span class="md"></span>剪辑</div>
+        <div class="map-node" data-k="拍摄"><span class="md"></span>拍摄</div>
+        <div class="map-node" data-k="排版"><span class="md"></span>排版</div>
+      </div>
+      <div class="map-cap">点击能力点，点亮现在的我</div>
+
+      <div class="sec-t"><span class="tag">4.2</span>此刻的我与联系方式</div>
+      <div class="self-card">
+        <h3>简介</h3>
+        <p style="font-size:15px;color:var(--ink-2)">我是周昀初，爱看、爱拍、爱记录，认真感受每一件小事。</p>
+      </div>
+      <div class="self-card">
+        <h3>联系方式</h3>
+        <div class="contact-row"><span class="lbl">邮箱</span><a href="mailto:202402143011@mails.cuc.edu.cn">202402143011@mails.cuc.edu.cn</a></div>
+        <div class="contact-row"><span class="lbl">电话</span><a href="tel:17816184682">17816184682</a></div>
+      </div>
+    </section>
+
+    <!-- 第 5 页 · 第五章 -->
+    <section class="page" data-i="5">
+      <div class="ch-kicker">第五章 · 未完成</div>
+      <div class="ch-head"><span class="ch-num">第五章</span><span class="ch-title">未完成｜空白章节</span></div>
+
+      <div class="blank">
+        <div class="dot">· · ·</div>
+        <div class="line1">这一章，将在未来的某个版本中写下。</div>
+        <div class="future-tags">
+          <span>“工作后的第一版”</span>
+          <span>“成为______”</span>
+          <span>“______”</span>
+        </div>
+        <div class="renew">这本书会一直改下去——旧版存档，新版继续。</div>
+      </div>
+
+      <div class="messages">
+        <h3>在空白页留言</h3>
+        <div class="sub">你的寄语，会成为这本书后续版本的一部分。</div>
+        <div class="msg-form">
+          <textarea id="msgInput" rows="3" placeholder="写下你想对未来的我说的话……"></textarea>
+          <button id="msgSend">写下寄语</button>
+        </div>
+        <div class="msg-list" id="msgList"></div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- 底部翻页导航 -->
+<nav class="nav">
+  <div class="nav-in">
+    <button class="nav-btn" id="prevBtn">‹ 上一页</button>
+    <div class="nav-ind">
+      <div class="where" id="navWhere">封面</div>
+      <div class="pos" id="navPos"></div>
+      <div class="dots" id="navDots"></div>
+    </div>
+    <button class="nav-btn" id="nextBtn">下一页 ›</button>
+  </div>
+</nav>
+
+<script>
+(function(){
+  "use strict";
+  var total = 5;                 /* 5 个章节页（封面单独 index=0） */
+  var cur = 0;
+  var track = document.getElementById('track');
+  var names = ['第一章 · 启蒙','第二章 · 磨刀','第三章 · 碰撞','第四章 · 现在','第五章 · 未完成'];
+
+  var dotsBox = document.getElementById('navDots');
+  for(var i=0;i<total;i++){ dotsBox.appendChild(document.createElement('i')); }
+  var dots = dotsBox.querySelectorAll('i');
+
+  var prevBtn=document.getElementById('prevBtn'), nextBtn=document.getElementById('nextBtn');
+  var where=document.getElementById('navWhere'), pos=document.getElementById('navPos');
+
+  function renderNav(){
+    track.style.transform = 'translateX(-'+cur+'00%)';
+    if(cur===0){
+      prevBtn.style.visibility='hidden'; nextBtn.style.visibility='hidden';
+      where.textContent='封面'; pos.textContent='';
+    } else {
+      prevBtn.style.visibility='visible';
+      nextBtn.style.visibility = (cur===total)?'hidden':'visible';
+      where.textContent=names[cur-1];
+      pos.textContent=cur+' / '+total;
+    }
+    dots.forEach(function(d,j){ d.classList.toggle('on', j===cur-1); });
+  }
+  function go(n){ cur = Math.max(0, Math.min(total, n)); renderNav(); }
+
+  document.getElementById('openBtn').addEventListener('click', function(){ go(1); });
+  prevBtn.addEventListener('click', function(){ go(cur-1); });
+  nextBtn.addEventListener('click', function(){ go(cur+1); });
+
+  /* 触摸滑动翻页 */
+  var x0=null;
+  document.addEventListener('touchstart', function(e){ x0=e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    if(x0===null) return;
+    var dx = e.changedTouches[0].clientX - x0;
+    if(Math.abs(dx)>60){ dx<0 ? go(cur+1) : go(cur-1); }
+    x0=null;
+  }, {passive:true});
+
+  /* 翻页卡：草稿在前，点按翻开成稿 */
+  document.querySelectorAll('.flip .face').forEach(function(face){
+    face.addEventListener('click', function(e){
+      if(e.target.closest('a')||e.target.closest('.flip-btn')) return;
+      face.parentNode.classList.toggle('flipped');
+    });
+  });
+  document.querySelectorAll('.flip-btn').forEach(function(b){
+    b.addEventListener('click', function(){ b.closest('.flip').classList.toggle('flipped'); });
+  });
+
+  /* 能力地图：点亮能力点 */
+  var nodes = document.querySelectorAll('.map-node');
+  nodes.forEach(function(g){
+    g.addEventListener('click', function(){
+      var active = g.classList.contains('on');
+      nodes.forEach(function(n){ n.classList.remove('on'); });
+      if(!active){ g.classList.add('on'); }
+    });
+  });
+
+  /* 空白页留言（浏览器本地保存） */
+  var KEY='chupin-messages';
+  function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function renderMsg(){
+    var msgs = JSON.parse(localStorage.getItem(KEY)||'[]');
+    var list = document.getElementById('msgList');
+    list.innerHTML='';
+    if(!msgs.length){ list.innerHTML='<div style="color:var(--ink-3);font-size:13px">还没有寄语——你来写第一句。</div>'; return; }
+    msgs.slice().reverse().forEach(function(m){
+      var el=document.createElement('div');
+      el.className='msg-item';
+      el.innerHTML='<div class="t">『写在'+m.d+' 的空白页』</div><p>'+esc(m.text)+'</p>';
+      list.appendChild(el);
+    });
+  }
+  document.getElementById('msgSend').addEventListener('click', function(){
+    var input=document.getElementById('msgInput'); var text=input.value.trim();
+    if(!text) return;
+    var msgs=JSON.parse(localStorage.getItem(KEY)||'[]');
+    var now=new Date(); msgs.push({text:text,d:(now.getMonth()+1)+'月'+now.getDate()+'日'});
+    localStorage.setItem(KEY,JSON.stringify(msgs)); input.value=''; renderMsg();
+  });
+  renderMsg();
+
+  /* 翻页卡高度自适应（成稿与草稿谁高取谁） */
+  function sizeFlips(){
+    document.querySelectorAll('.flip').forEach(function(el){
+      var d=el.querySelector('.face.draft'), f=el.querySelector('.face.final');
+      var h=Math.max(d.offsetHeight, f.offsetHeight);
+      el.style.height=(h>0?h:200)+'px';
+    });
+  }
+  sizeFlips();
+  window.addEventListener('load', sizeFlips);
+  window.addEventListener('resize', sizeFlips);
+
+  renderNav();
+})();
+</script>
+</body>
+</html>
