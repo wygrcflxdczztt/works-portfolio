@@ -374,8 +374,8 @@ img{max-width:100%;height:auto;display:block}
 
     <!-- 第 5 页 · 第五章 -->
     <section class="page" data-i="5">
-      <div class="ch-kicker">第五章 · 未完成</div>
-      <div class="ch-head"><span class="ch-num">第五章</span><span class="ch-title">未完成｜空白章节</span></div>
+      <div class="ch-kicker">第五章 · 待续</div>
+      <div class="ch-head"><span class="ch-num">第五章</span><span class="ch-title">待续｜空白章节</span></div>
 
       <div class="blank">
         <div class="dot">· · ·</div>
@@ -421,7 +421,7 @@ img{max-width:100%;height:auto;display:block}
   var total = 5;                 /* 5 个章节页（封面单独 index=0） */
   var cur = 0;
   var track = document.getElementById('track');
-  var names = ['第一章 · 启蒙','第二章 · 磨刀','第三章 · 碰撞','第四章 · 现在','第五章 · 未完成'];
+  var names = ['第一章 · 启蒙','第二章 · 磨刀','第三章 · 碰撞','第四章 · 现在','第五章 · 待续'];
 
   var dotsBox = document.getElementById('navDots');
   for(var i=0;i<total;i++){ dotsBox.appendChild(document.createElement('i')); }
@@ -515,6 +515,11 @@ img{max-width:100%;height:auto;display:block}
   sizeFlips();
   window.addEventListener('load', sizeFlips);
   window.addEventListener('resize', sizeFlips);
+
+  /* 截图/直链支持：?p=N 跳转到指定页（0=封面,1~5=章节），?flip 翻开全部成稿 */
+  var pm = location.search.match(/[?&]p=(\d+)/);
+  if(pm){ go(parseInt(pm[1],10)); }
+  if(location.search.indexOf('flip')>=0){ document.querySelectorAll('.flip').forEach(function(el){ el.classList.add('flipped'); }); }
 
   renderNav();
 })();
